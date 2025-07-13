@@ -1,0 +1,26 @@
+{% if students|length > 0 %}
+    <table class="w-full border-collapse border border-gray-300">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b text-left">IDNO</th>
+                <th class="py-2 px-4 border-b text-left">LASTNAME</th>
+                <th class="py-2 px-4 border-b text-left">FIRSTNAME</th>
+                <th class="py-2 px-4 border-b text-left">COURSE</th>
+                <th class="py-2 px-4 border-b text-left">LEVEL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students | reverse %}
+                <tr>
+                    <td class="py-2 px-4 border-b">{{ student.idno | upper }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.lastname  | title }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.firstname  | title }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.course  | upper }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.level  | upper }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <h2 class="text-lg font-thin mb-4">No registered student yet!</h2>
+{% endif %}

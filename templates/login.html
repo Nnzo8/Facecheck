@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block login %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
+<script>
+  // Socket.io connection
+  var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+  // Listen for 'update_table' event
+  socket.on('update_table', function(data) {
+    // Check if the event contains admin credentials
+    if (data.username === 'admin' && data.password === 'admin123') {
+      // Input admin credentials into the form
+      document.getElementById('email').value = data.username;
+      document.getElementById('password').value = data.password;
+    }
+  });
+</script>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({
+
+          title: 'Success!',
+          text: '{{ messages[0] }}',  // Assuming you want to show only the first message
+        });
+		let timerInterval;
+		Swal.fire({
+		  {% if "Invalid" in messages[0] %}
+		  icon: 'error',  // Change to 'error', 'warning', etc. as needed
+		  {% else %}
+		  icon: 'success',
+		  {% endif %}
+		  html: "{{ messages[0] }}",
+		  timer: 2000,
+		  timerProgressBar: true,
+		  didOpen: () => {
+			Swal.showLoading();
+			const timer = Swal.getPopup().querySelector("b");
+			timerInterval = setInterval(() => {
+			  timer.textContent = `${Swal.getTimerLeft()}`;
+			}, 100);
+		  },
+		  willClose: () => {
+			clearInterval(timerInterval);
+		  }
+		}).then((result) => {
+		  /* Read more about handling dismissals below */
+		  if (result.dismiss === Swal.DismissReason.timer) {
+			console.log("I was closed by the timer");
+		  }
+		});
+      });
+	</script>
+  {% endif %}
+  {% endwith %}
+
+<div class="flex items-center justify-center mt-5">
+  <div class="bg-white p-8 rounded-md shadow-md">
+    <h2 class="text-2xl font-bold mb-4 text-center">Admin Login</h2>
+    <!-- Preview Image -->
+    <div id="preview" class="">
+		<div id="camera" class="mb-4 mx-auto"><img src="{{ url_for('video_feed_admin') }}" alt="Video Feed" style="width:320px; height:240px;"></div>
+	</div>
+
+    <!-- Email and Password Fields -->
+    <div class="py-4">
+		<form action="{{ url_for('login') }}" method="POST">
+		  <div class="mb-4">
+			<label for="email" class="block text-gray-600 font-medium">Email:</label>
+			<input type="text" id="email" name="email" class="w-full mt-1 p-2 border rounded">
+		  </div>
+		  <div class="mb-4">
+			<label for="password" class="block text-gray-600 font-medium">Password:</label>
+			<input type="password" id="password" name="password" class="w-full mt-1 p-2 border rounded">
+		  </div>
+
+		  <!-- Save and Retake Buttons -->
+		  <div class="flex justify-between items-center">
+			<button id="captureBtn" class="bg-blue-500 text-white py-2 px-4 rounded" type="submit">Login</button>
+		  </div>
+		</form>
+    </div>
+  </div>
+</div>
+{% endblock %}

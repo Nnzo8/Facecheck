@@ -1,0 +1,218 @@
+{% extends 'index.html' %}
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('update_table', function (data) {
+            // Update the table dynamically
+            var tableBody = document.getElementById('present-students-table-body');
+
+            // Insert new row at the top of the table
+            var newRow = tableBody.insertRow(0);
+
+            // Insert cells into the new row
+            var cell1 = newRow.insertCell(0);
+            var cell2 = newRow.insertCell(1);
+            var cell3 = newRow.insertCell(2);
+            var cell4 = newRow.insertCell(3);
+            var cell5 = newRow.insertCell(4);
+            var cell6 = newRow.insertCell(5);
+
+            // Set Tailwind CSS classes for styling
+            cell1.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+            cell2.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+            cell3.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+            cell4.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+            cell5.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+            cell6.className = "py-2 px-4 border-b text-left";  // Adjust as needed
+
+            // Set cell values
+            cell1.innerHTML = data.idno;
+            cell2.innerHTML = data.lastname;
+            cell3.innerHTML = data.firstname;
+            cell4.innerHTML = data.course;
+            cell5.innerHTML = data.level;
+            cell6.innerHTML = data.time;
+        });
+
+        // Webcam.js initialization
+        Webcam.set({
+          width: 320,
+          height: 240,
+          image_type: 'jpeg',
+          jpeg_quality: 90,
+        });
+
+        function showCameraError(msg) {
+          document.getElementById('camera-error').innerText = msg;
+          document.getElementById('scanBtn').disabled = true;
+          document.getElementById('scanBtn').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        Webcam.attach('#camera', undefined, function(err) {
+          if (err) {
+            showCameraError("Could not access webcam. Please close other apps or tabs using the camera and reload.");
+          }
+        });
+
+        // Scan button handler
+        document.getElementById('scanBtn').onclick = function() {
+          Webcam.snap(function (data_uri) {
+            // Send to backend for recognition
+            fetch('/recognize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: data_uri })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                // Add student to table
+                var tableBody = document.getElementById('present-students-table-body');
+                var newRow = tableBody.insertRow(0);
+                ['idno', 'lastname', 'firstname', 'course', 'level', 'time'].forEach(function(key) {
+                  var cell = newRow.insertCell(-1);
+                  cell.className = "py-2 px-4 border-b text-left";
+                  cell.innerText = (data.student[key] || '').toUpperCase();
+                });
+                Swal.fire({
+                  icon: "success",
+                  title: "Attendance Recorded",
+                  text: data.student.firstname + " " + data.student.lastname + " marked present.",
+                });
+              } else {
+                Swal.fire({
+                  icon: "error",
+                  title: "Not Recognized",
+                  text: data.message || "Face not recognized.",
+                });
+              }
+            })
+            .catch(() => {
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Could not process the image.",
+              });
+            });
+          });
+        };
+    });
+</script>
+
+<form id="saveForm" action="{{ url_for('save') }}" method="post" class="hidden">
+    <input type="hidden" id="filenameInput" name="filename" value="">
+</form>
+
+<div class="grid gap-4 m-5 md:grid-cols-3">
+	<div class="bg-white p-8 rounded-md shadow-md flex flex-col items-center">
+		<h2 class="text-2xl font-bold mb-4">Live Camera Attendance</h2>
+		<!-- Webcam Preview in Square with Rounded Corners -->
+		<div class="mb-4 flex justify-center">
+			<div class="rounded-xl border-4 border-blue-200 w-64 h-64 flex items-center justify-center overflow-hidden bg-gray-100" id="camera">
+				<span class="text-gray-400 text-center w-full">
+					<svg class="mx-auto mb-2" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M24 9v3m0 24v3m-9-12h3m18 0h3M7.5 24a16.5 16.5 0 1 1 33 0 16.5 16.5 0 0 1-33 0Z"/></svg>
+				</span>
+			</div>
+		</div>
+		<div id="camera-error" class="text-red-600 text-center text-xs mb-2"></div>
+		<button id="scanBtn" type="button" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-8 rounded-lg font-semibold shadow">Scan</button>
+	</div>
+	
+	<div class="bg-white p-8 rounded-md shadow-md md:col-span-2 min-h-[610px] max-h-[610px] overflow-y-auto">
+		<div class="flex justify-between items-center mb-4">
+			<h2 class="text-2xl font-bold">Present Students</h2>
+			<div class="space-x-4">
+				<!-- Save Button -->
+				<button id="saveButton" class="border border-green-500 bg-green-500 text-white hover:bg-green-700 font-semibold px-3 rounded">Save</button>
+				<!-- Delete Button -->
+				<button id="resetLink" class="bg-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white px-1.5 border border-red-500 hover:border-transparent rounded">Reset</button>
+			</div>
+		</div>
+        <!-- Table for Present Students -->
+        <table id="present-students-table" class="w-full border-collapse border border-gray-300">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 border-b text-left">IDNO</th>
+                    <th class="py-2 px-4 border-b text-left">LASTNAME</th>
+                    <th class="py-2 px-4 border-b text-left">FIRSTNAME</th>
+                    <th class="py-2 px-4 border-b text-left">COURSE</th>
+                    <th class="py-2 px-4 border-b text-left">LEVEL</th>
+                    <th class="py-2 px-4 border-b text-left">TIME</th>
+                </tr>
+            </thead>
+            <tbody id="present-students-table-body">
+                <!-- This will be dynamically updated by JavaScript -->
+				{% for student in present_students | reverse %}
+                <tr>
+                    <td class="py-2 px-4 border-b">{{ student.idno | upper }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.lastname  | title }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.firstname  | title }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.course  | upper }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.level  | upper }}</td>
+                    <td class="py-2 px-4 border-b">{{ student.time  | upper }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <h2 id="no-present-students-message" class="text-lg font-thin mb-4"></h2>
+    </div>
+</div>
+				<script>
+				document.getElementById('resetLink').addEventListener('click', function(event) {
+				  console.log('Reset button clicked!');
+				  // Display SweetAlert confirmation
+				  Swal.fire({
+					title: 'Reset Confirmation',
+					text: 'Are you sure you want to reset?',
+					icon: 'warning',
+					showCancelButton: true,
+					confirmButtonColor: '#d33',
+					cancelButtonColor: '#3085d6',
+					confirmButtonText: 'Yes, reset!',
+					cancelButtonText: 'No, cancel'
+				  }).then((result) => {
+					// If the user clicks "Yes, reset!"
+					if (result.isConfirmed) {
+					  // Redirect to the reset route
+					  window.location.href = "{{ url_for('reset') }}";
+					}
+				  });
+				});
+				
+				// Event listener for Save button
+				document.getElementById('saveButton').addEventListener('click', function(event) {
+					event.preventDefault(); // Prevent the default behavior of the button
+
+					// Display SweetAlert input prompt
+					Swal.fire({
+						title: 'Enter Filename',
+						input: 'text',
+						inputPlaceholder: 'Enter filename',
+						showCancelButton: true,
+						confirmButtonText: 'Save',
+						cancelButtonText: 'Cancel',
+						preConfirm: (filename) => {
+							// Validate if the user entered a filename
+							if (!filename) {
+								Swal.showValidationMessage('Filename cannot be empty');
+							}
+							return filename;
+						}
+					}).then((result) => {
+						// If the user clicked "Save"
+						if (result.isConfirmed) {
+							// Set the filename to the form input
+							document.getElementById('filenameInput').value = result.value;
+
+							// Submit the form
+							document.getElementById('saveForm').submit();
+						}
+					});
+				});
+				</script>
+{% endblock %}

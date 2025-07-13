@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block navbar %}
+<nav class="bg-blue-500 p-4">
+    <div class="container mx-auto flex justify-between items-center px-5">
+      <!-- Left side - Title -->
+      <div class="text-white text-xl font-bold">{{ title|upper }}</div>
+
+      <!-- Right side - Register and Login -->
+      <div class="flex space-x-4">
+        <a href="/" class="text-white hover:text-gray-300">Home</a>
+		<a href="/attendance" class="text-white hover:text-gray-300">Attendance</a>
+        <a href="/register" class="text-white hover:text-gray-300">Register</a>
+        <a href="/students" class="text-white hover:text-gray-300">Registered Students</a>
+        <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-300">Logout</a>
+      </div>
+    </div>
+</nav>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({
+
+          title: 'Success!',
+          text: '{{ messages[0] }}',  // Assuming you want to show only the first message
+        });
+		let timerInterval;
+		Swal.fire({
+		  {% if "Invalid" in messages[0] %}
+		  icon: 'error',  // Change to 'error', 'warning', etc. as needed
+		  {% else %}
+		  icon: 'success',
+		  {% endif %}
+		  html: "{{ messages[0] }}",
+		  timer: 2000,
+		  timerProgressBar: true,
+		  didOpen: () => {
+			Swal.showLoading();
+			const timer = Swal.getPopup().querySelector("b");
+			timerInterval = setInterval(() => {
+			  timer.textContent = `${Swal.getTimerLeft()}`;
+			}, 100);
+		  },
+		  willClose: () => {
+			clearInterval(timerInterval);
+		  }
+		}).then((result) => {
+		  /* Read more about handling dismissals below */
+		  if (result.dismiss === Swal.DismissReason.timer) {
+			console.log("I was closed by the timer");
+		  }
+		});
+      });
+	</script>
+  {% endif %}
+  {% endwith %}
+
+{% block content %}
+{% endblock %}
+
+{% endblock %}

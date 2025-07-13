@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="ie-edge">
+		<meta name="viewport" content="width=device-width,initial-scale=1.0">
+		<script src="https://cdn.tailwindcss.com"></script>
+		<title>{{ title | upper }}</title>
+	</head>
+	<body>
+		<div class="fixed top-0 left-0 w-full h-full bg-gray-100 z-[-1]"></div>
+		{% block navbar%}
+		{% endblock %}
+		{% block login %}
+		{% endblock %}
+	</body>
+</html>

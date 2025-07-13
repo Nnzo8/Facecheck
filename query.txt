@@ -1,0 +1,9 @@
+CREATE TABLE accounts (
+    acc_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    password TEXT NOT NULL,
+    image VARCHAR(250)
+);
+
+INSERT INTO accounts (email, password, image)
+VALUES ('user@example.com', 'securepassword', 'path/to/image.jpg');

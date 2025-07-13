@@ -1,0 +1,150 @@
+{% extends 'index.html' %}
+{% block content %}
+<div class="m-8">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-bold text-blue-700">Registered Students</h2>
+    <span class="text-xs text-gray-500 bg-blue-50 px-3 py-1 rounded-full">{{ students|length }} total</span>
+  </div>
+  <div class="bg-white rounded-2xl shadow-lg p-4 overflow-y-auto max-h-[600px]">
+    {% if students|length > 0 %}
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr class="bg-blue-50 text-blue-700">
+          <th class="py-2 px-3 border-b font-semibold text-left">IDNO</th>
+          <th class="py-2 px-3 border-b font-semibold text-left">LASTNAME</th>
+          <th class="py-2 px-3 border-b font-semibold text-left">FIRSTNAME</th>
+          <th class="py-2 px-3 border-b font-semibold text-left">COURSE</th>
+          <th class="py-2 px-3 border-b font-semibold text-left">LEVEL</th>
+          <th class="py-2 px-3 border-b font-semibold text-left">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students | reverse %}
+        <tr class="hover:bg-blue-50 transition" data-idno="{{ student.idno }}"
+            data-lastname="{{ student.lastname }}"
+            data-firstname="{{ student.firstname }}"
+            data-course="{{ student.course }}"
+            data-level="{{ student.level }}">
+          <td class="py-2 px-3 border-b">{{ student.idno | upper }}</td>
+          <td class="py-2 px-3 border-b">{{ student.lastname  | title }}</td>
+          <td class="py-2 px-3 border-b">{{ student.firstname  | title }}</td>
+          <td class="py-2 px-3 border-b">{{ student.course  | upper }}</td>
+          <td class="py-2 px-3 border-b">{{ student.level  | upper }}</td>
+          <td class="py-2 px-3 border-b">
+            <button class="edit-btn bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1">Edit</button>
+            <button class="delete-btn bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-gray-400 text-center py-8">No registered student yet!</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <h3 class="text-lg font-bold mb-4">Edit Student</h3>
+    <form id="editForm" method="post">
+      <input type="hidden" id="edit-idno" name="idno">
+      <div class="mb-2">
+        <label class="block text-xs font-semibold mb-1">Last Name</label>
+        <input type="text" id="edit-lastname" name="lastname" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="mb-2">
+        <label class="block text-xs font-semibold mb-1">First Name</label>
+        <input type="text" id="edit-firstname" name="firstname" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="mb-2">
+        <label class="block text-xs font-semibold mb-1">Course</label>
+        <input type="text" id="edit-course" name="course" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-semibold mb-1">Level</label>
+        <input type="text" id="edit-level" name="level" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="cancelEdit" class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">Cancel</button>
+        <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Edit button handler
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const row = btn.closest('tr');
+      document.getElementById('edit-idno').value = row.dataset.idno;
+      document.getElementById('edit-lastname').value = row.dataset.lastname;
+      document.getElementById('edit-firstname').value = row.dataset.firstname;
+      document.getElementById('edit-course').value = row.dataset.course;
+      document.getElementById('edit-level').value = row.dataset.level;
+      document.getElementById('editModal').classList.remove('hidden');
+    });
+  });
+
+  // Cancel edit
+  document.getElementById('cancelEdit').onclick = function() {
+    document.getElementById('editModal').classList.add('hidden');
+  };
+
+  // Submit edit form
+  document.getElementById('editForm').onsubmit = function(e) {
+    e.preventDefault();
+    const idno = document.getElementById('edit-idno').value;
+    const data = {
+      lastname: document.getElementById('edit-lastname').value,
+      firstname: document.getElementById('edit-firstname').value,
+      course: document.getElementById('edit-course').value,
+      level: document.getElementById('edit-level').value
+    };
+    fetch(`/students/edit/${idno}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    }).then(res => res.json())
+      .then(resp => {
+        if (resp.success) {
+          location.reload();
+        } else {
+          Swal.fire('Error', resp.message || 'Could not update student.', 'error');
+        }
+      });
+  };
+
+  // Delete button handler
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const row = btn.closest('tr');
+      const idno = row.dataset.idno;
+      Swal.fire({
+        title: 'Delete Student?',
+        text: `Are you sure you want to delete student ${idno}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/students/delete/${idno}`, {method: 'POST'})
+            .then(res => res.json())
+            .then(resp => {
+              if (resp.success) {
+                location.reload();
+              } else {
+                Swal.fire('Error', resp.message || 'Could not delete student.', 'error');
+              }
+            });
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
