@@ -1,8 +1,6 @@
 {% extends 'index.html' %}
 {% block content %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var socket = io.connect('http://' + document.domain + ':' + location.port);
@@ -38,69 +36,6 @@
             cell5.innerHTML = data.level;
             cell6.innerHTML = data.time;
         });
-
-        // Webcam.js initialization
-        Webcam.set({
-          width: 320,
-          height: 240,
-          image_type: 'jpeg',
-          jpeg_quality: 90,
-        });
-
-        function showCameraError(msg) {
-          document.getElementById('camera-error').innerText = msg;
-          document.getElementById('scanBtn').disabled = true;
-          document.getElementById('scanBtn').classList.add('opacity-50', 'cursor-not-allowed');
-        }
-
-        Webcam.attach('#camera', undefined, function(err) {
-          if (err) {
-            showCameraError("Could not access webcam. Please close other apps or tabs using the camera and reload.");
-          }
-        });
-
-        // Scan button handler
-        document.getElementById('scanBtn').onclick = function() {
-          Webcam.snap(function (data_uri) {
-            // Send to backend for recognition
-            fetch('/recognize', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ image: data_uri })
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                // Add student to table
-                var tableBody = document.getElementById('present-students-table-body');
-                var newRow = tableBody.insertRow(0);
-                ['idno', 'lastname', 'firstname', 'course', 'level', 'time'].forEach(function(key) {
-                  var cell = newRow.insertCell(-1);
-                  cell.className = "py-2 px-4 border-b text-left";
-                  cell.innerText = (data.student[key] || '').toUpperCase();
-                });
-                Swal.fire({
-                  icon: "success",
-                  title: "Attendance Recorded",
-                  text: data.student.firstname + " " + data.student.lastname + " marked present.",
-                });
-              } else {
-                Swal.fire({
-                  icon: "error",
-                  title: "Not Recognized",
-                  text: data.message || "Face not recognized.",
-                });
-              }
-            })
-            .catch(() => {
-              Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Could not process the image.",
-              });
-            });
-          });
-        };
     });
 </script>
 
@@ -109,18 +44,10 @@
 </form>
 
 <div class="grid gap-4 m-5 md:grid-cols-3">
-	<div class="bg-white p-8 rounded-md shadow-md flex flex-col items-center">
+	<div class="bg-white p-8 rounded-md shadow-md">
 		<h2 class="text-2xl font-bold mb-4">Live Camera Attendance</h2>
-		<!-- Webcam Preview in Square with Rounded Corners -->
-		<div class="mb-4 flex justify-center">
-			<div class="rounded-xl border-4 border-blue-200 w-64 h-64 flex items-center justify-center overflow-hidden bg-gray-100" id="camera">
-				<span class="text-gray-400 text-center w-full">
-					<svg class="mx-auto mb-2" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M24 9v3m0 24v3m-9-12h3m18 0h3M7.5 24a16.5 16.5 0 1 1 33 0 16.5 16.5 0 0 1-33 0Z"/></svg>
-				</span>
-			</div>
-		</div>
-		<div id="camera-error" class="text-red-600 text-center text-xs mb-2"></div>
-		<button id="scanBtn" type="button" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-8 rounded-lg font-semibold shadow">Scan</button>
+		<!-- Webcam Preview -->
+		<div id="camera" class="mb-4 mx-auto"><img src="{{ url_for('video_feed') }}" alt="Video Feed"></div>
 	</div>
 	
 	<div class="bg-white p-8 rounded-md shadow-md md:col-span-2 min-h-[610px] max-h-[610px] overflow-y-auto">
@@ -162,6 +89,7 @@
         <h2 id="no-present-students-message" class="text-lg font-thin mb-4"></h2>
     </div>
 </div>
+				<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 				<script>
 				document.getElementById('resetLink').addEventListener('click', function(event) {
 				  console.log('Reset button clicked!');

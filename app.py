@@ -39,6 +39,10 @@ def logout()->None:
 		flash("Account has been logged out successfully!")
 	return redirect(url_for('login'))
 
+@app.route('/')
+def landing():
+    return render_template('landing.html')
+
 @app.route("/login", methods=['POST', 'GET'])
 def login() -> None:
     if "username" not in session:
@@ -98,7 +102,7 @@ def gen_frames_admin():
                     if std[0] not in present_adm:
                         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         present_adm.append({**std[0], 'time': current_time})  # student is checked and marked present
-                        socketio.emit('update_table', {'username': 'admin', 'password': 'admin123'}, room=current_request_sid)
+                        socketio.emit('update_table', {'username': 'buaya_admin', 'password': 'admin123'}, room=current_request_sid)
                     #print(f"RESULTS: {present_adm}")
 
                 text = f"{lastname_str}"  # Display lastname and idno on separate lines
@@ -161,11 +165,11 @@ def saveimage() -> str:
         return "Failed", 400
     return "Success", 200
 
-@app.route("/")
-def home()->None:
+@app.route('/home')
+def home():
     if "username" in session:
         print(f"PRESENT STUDENTS: {present_std}")
-        return render_template("home.html",title="Home")
+        return render_template("home.html", title="Home")
     else:
         return redirect(url_for('login'))
 
@@ -294,7 +298,7 @@ def save():
         return redirect(url_for('home'))
     else:
         return redirect(url_for('login'))
-
+    
 @app.route('/students')
 def students():
     if "username" in session:
@@ -305,5 +309,6 @@ def students():
 
 if __name__=="__main__":
 	app.run(host="0.0.0.0",debug=True)
-
-
+	
+	
+	
